@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using TronNet;
+using WebApplication1.Hubs;
 
 namespace WebApplication1.Services
 {
@@ -11,15 +13,16 @@ namespace WebApplication1.Services
         private readonly IOptions<TronNetOptions> _options;
         private readonly HttpClient _httpClient;
         private readonly IWalletClient _walletClient;
-        public TronService(ITransactionClient transactionClient, IOptions<TronNetOptions> options, ITronClient tronClient, IWalletClient walletClient)
+        private readonly IHubContext<TrxTransactionHub> _hubContext;
+        public TronService(ITransactionClient transactionClient, IOptions<TronNetOptions> options, ITronClient tronClient, IWalletClient walletClient, IHubContext<TrxTransactionHub> hubContext)
         {
             _tronClient = tronClient;
-
             _options = options;
             _transactionClient = transactionClient;
             _httpClient = new HttpClient();
             _walletClient = walletClient;
             _httpClient.BaseAddress = new Uri("https://nile.trongrid.io");
+            _hubContext = hubContext; // SignalR Hub context
         }
 
         public async Task MonitorAndTransferTrxAsync()
@@ -34,40 +37,42 @@ namespace WebApplication1.Services
 
             while (true)
             {
-                await Task.Delay(1); // 5 saniye bekle (İhtiyaç duyarsanız ayarlayabilirsiniz)
-                 previousBalance = await GetTrxBalanceAsync(fromAddress);
-                Console.WriteLine($"Başlangıç bakiyesi: {previousBalance} TRX");
+                await Task.Delay(1); // 1 saniye bekle
+
                 try
                 {
                     decimal currentBalance = await GetTrxBalanceAsync(fromAddress);
 
+                    // Eğer bakiyede artış olduysa
                     if (currentBalance > previousBalance)
                     {
                         decimal newAmount = currentBalance - previousBalance;
                         Console.WriteLine($"Yeni TRX girişi tespit edildi: {newAmount} TRX");
 
-                        // Gelen miktar yeterince büyükse transfer gerçekleştir
-                        if (newAmount >= 0.1m) // Örneğin minimum 0.1 TRX
+                        // SignalR ile tüm bağlı istemcilere bildirim gönder
+                         await _hubContext.Clients.All.SendAsync("ReceiveMessage", $"Yeni TRX girişi tespit edildi: {newAmount} TRX");
+                        // Transfer işlemini başlat
+                        var transactionExtension = await _transactionClient.CreateTransactionAsync(fromAddress, toAddress, (long)newAmount); // Mikro-TRX cinsine çeviriyoruz
+
+
+                        var transactionSigned = _transactionClient.GetTransactionSign(transactionExtension.Transaction, privateKey);
+                        var result = await _transactionClient.BroadcastTransactionAsync(transactionSigned);
+
+                        if (result.Result)
                         {
-                            var transactionExtension = await _transactionClient.CreateTransactionAsync(
-                                fromAddress, toAddress, (long)(newAmount * 1_000_000));
+                            Console.WriteLine("TRX transfer işlemi başarılı.");
 
-                            var transactionSigned = _transactionClient.GetTransactionSign(transactionExtension.Transaction, privateKey);
-                            var result = await _transactionClient.BroadcastTransactionAsync(transactionSigned);
+                            // Transfer başarılıysa bakiyeyi güncelle
+                            previousBalance = currentBalance;
 
-                            if (result.Result)
-                            {
-                                Console.WriteLine("TRX transfer işlemi başarılı.");
-                                previousBalance = currentBalance; // Güncel bakiye
-                            }
-                            else
-                            {
-                                Console.WriteLine("TRX transfer işlemi başarısız. Hata detayları: " + result.Message);
-                            }
+                            // Başarılı işlem sonrası döngüyü sıfırlayıp baştan başlatıyoruz
+                            Console.WriteLine("İşlem tamamlandı. Uygulama baştan başlayacak.");
+                            break; // Döngüyü kırarak başa sarıyoruz
                         }
                         else
                         {
-                            Console.WriteLine("Gelen miktar çok küçük, transfer yapılmadı.");
+                            Console.WriteLine("TRX transfer işlemi başarısız. Hata detayları: " + result.Message);
+                            throw new Exception("Transfer işlemi başarısız. Yeniden başlatılıyor.");
                         }
                     }
                     else
@@ -78,8 +83,16 @@ namespace WebApplication1.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Bir hata oluştu: {ex.Message}");
+
+                    // Hata durumunda başa sarma
+                    Console.WriteLine("Hata alındı. Uygulama baştan başlatılıyor.");
+                    break; // Döngüyü kırarak başa sarıyoruz
                 }
             }
+
+            // Uygulamayı baştan başlatma işlemi için tekrar çağırabiliriz.
+            Console.WriteLine("Başlatılıyor...");
+            await MonitorAndTransferTrxAsync(); // Yine aynı işlemi başlatıyoruz.
         }
 
         public async Task<decimal> GetTrxBalanceAsync(string address)
@@ -103,12 +116,9 @@ namespace WebApplication1.Services
             }
         }
 
-
-
-
-
     }
 }
+
 
 
         
