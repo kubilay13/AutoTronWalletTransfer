@@ -16,9 +16,9 @@ builder.Services.AddScoped<TronService>();
 // TRON aðý ayarlarý
 builder.Services.AddTronNet(x =>
 {
-    x.Network = TronNetwork.MainNet;
-    x.Channel = new GrpcChannelOption { Host = "grpc.main.trongrid.io", Port = 50051 };
-    x.SolidityChannel = new GrpcChannelOption { Host = "grpc.main.trongrid.io", Port = 50052 };
+    x.Network = TronNetwork.TestNet;
+    x.Channel = new GrpcChannelOption { Host = "grpc.nile.trongrid.io", Port = 50051 };
+    x.SolidityChannel = new GrpcChannelOption { Host = "grpc.nile.trongrid.io", Port = 50052 };
     x.ApiKey = "bbf6d1c9-daf4-49d9-a088-df29f664bac9";
 });
 
