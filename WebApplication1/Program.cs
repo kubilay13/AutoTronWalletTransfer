@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.SignalR;
 using TronNet;
 using WebApplication1.Hubs;
 using WebApplication1.Services;
@@ -16,10 +15,10 @@ builder.Services.AddScoped<TronService>();
 // TRON aðý ayarlarý
 builder.Services.AddTronNet(x =>
 {
-    x.Network = TronNetwork.TestNet;
-    x.Channel = new GrpcChannelOption { Host = "grpc.nile.trongrid.io", Port = 50051 };
-    x.SolidityChannel = new GrpcChannelOption { Host = "grpc.nile.trongrid.io", Port = 50052 };
-    x.ApiKey = "bbf6d1c9-daf4-49d9-a088-df29f664bac9";
+    x.Network = TronNetwork.MainNet;
+    x.Channel = new GrpcChannelOption { Host = "grpc.main.trongrid.io", Port = 50051 };
+    x.SolidityChannel = new GrpcChannelOption { Host = "grpc.main.trongrid.io", Port = 50052 };
+    x.ApiKey = "3d251bb6-e560-43d0-8893-ca8fe58d4eee";
 });
 
 var app = builder.Build();

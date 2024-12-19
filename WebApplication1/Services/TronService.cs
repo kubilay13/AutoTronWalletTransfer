@@ -21,15 +21,15 @@ namespace WebApplication1.Services
             _transactionClient = transactionClient;
             _httpClient = new HttpClient();
             _walletClient = walletClient;
-            _httpClient.BaseAddress = new Uri("https://nile.trongrid.io"); //https://nile.trongrid.io ,https://api.trongrid.io
+            _httpClient.BaseAddress = new Uri("https://api.trongrid.io"); //https://nile.trongrid.io ,https://api.trongrid.io
             _hubContext = hubContext; // SignalR Hub context
         }
 
         public async Task MonitorAndTransferTrxAsync()
         {
-            var privateKey = "e95295df4634a8e08e2a505b89339757ccebc4ea5e87b567140dc9aa09530f83";
-            var fromAddress = "TXNcyg5JxoW2NhHB9oQ7HZGHAs1gRdHbRr"; // Dinlenen cüzdan
-            var toAddress = "TTZQBBNCwd3BLR1GH99rxwBC3RSzqXbRgq"; // Transfer yapılacak cüzdan
+            var privateKey = "";//private key
+            var fromAddress = ""; // Dinlenen cüzdan
+            var toAddress = ""; // Transfer yapılacak cüzdan
 
             try
             {
