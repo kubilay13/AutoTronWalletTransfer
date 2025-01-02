@@ -1,4 +1,5 @@
 Potansiyel Kullanım Alanları:
+
 -Kripto Ödeme Otomasyonu: Ödemeleri otomatik olarak toplayan bir sistem kurmak.
 -Cüzdan Yönetimi: Birden fazla cüzdan arasında bakiye taşımak ve merkezi yönetim sağlamak.
 -Kötüye kullanımda sorumluluğum dışındadır.
